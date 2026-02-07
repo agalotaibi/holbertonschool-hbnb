@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hbnb Home</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="/part4/images/icon.png">
+</head>
+<body>
+    <header>
+        <a href="index.html">
+            <img src="/part4/images/logo-white.png" alt="Hbnb logo" class="logo">
+        </a>
+
+        <nav>
+            <a href="login.html" class="login-button" id="login-link">Login</a>
+        </nav>
+    </header>
+    <section class="hero">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Find your next<br>perfect stay</h1>
+                    <p>Discover unique homes and experiences around the world.</p>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div class="search-group">
+                    <label for="search-location">Where</label>
+                    <input type="text" id="search-location" placeholder="Search destinations">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="price-filter">Max Price</label>
+                    <select id="price-filter">
+                        <option value="all">All</option>
+                        <option value="10">Under $10</option>
+                        <option value="50">Under $50</option>
+                        <option value="100">Under $100</option>
+                    </select>
+                </div>
+
+                <button class="search-button">Search</button>
+            </div>
+        </section>
+    <main>
+        <section id="places-list">
+            <div class="place-card">
+                <img src="images/place1.jpg" alt="Cozy Apartment">
+                <h2>Cozy Apartment</h2>
+                <p>Price: $100 per night</p>
+                <a href="place.html" class="details-button">View Details</a>
+            </div>
+            <div class="place-card">
+                <img src="images/place2.jpg" alt="Luxury Condo">
+                <h2>Luxury Condo</h2>
+                <p>Price: $200 per night</p>
+                <a href="place.html" class="details-button">View Details</a>
+            </div>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <p>© 2026 HBnB. All rights reserved.</p>
+    </footer>
+     <script src="scripts.js"></script>
+</body>
+</html>
