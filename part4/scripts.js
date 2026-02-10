@@ -1,22 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // --- GLOBAL: CHECK AUTHENTICATION ---
   const token = getCookie('token');
   const loginLink = document.getElementById('login-link');
 
   if (loginLink) {
     if (token) {
-      // User is Logged In: Change button to "Logout"
       loginLink.style.display = 'block';
       loginLink.textContent = 'Logout';
       loginLink.href = '#';
       
       loginLink.addEventListener('click', (event) => {
         event.preventDefault();
-        document.cookie = "token=; path=/; max-age=0"; // Delete cookie
+        document.cookie = "token=; path=/; max-age=0";
         window.location.reload();
       });
     } else {
-      // User is Logged Out: Show "Login"
       loginLink.style.display = 'block';
       loginLink.textContent = 'Login';
       loginLink.href = 'login.html';
@@ -25,22 +22,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- PAGE ROUTING LOGIC ---
 
-  // 1. INDEX PAGE (List of Places)
-  if (document.getElementById('places-list')) {
-    fetchPlaces(token);
+    if (document.getElementById('places-list')) {
+      fetchPlaces(token);
+    
     const priceFilter = document.getElementById('price-filter');
     if (priceFilter) {
       priceFilter.addEventListener('change', (e) => filterPlaces(e.target.value));
     }
+
+    const searchButton = document.querySelector('.search-button');
+    const searchInput = document.getElementById('search-location'); // Make sure this ID matches your HTML
+
+    if (searchButton && searchInput) {
+      searchButton.addEventListener('click', () => {
+        performSearch(searchInput.value);
+      });
+
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          performSearch(searchInput.value);
+        }
+      });
+    }
   }
 
-  // 2. LOGIN PAGE
   const loginForm = document.getElementById('login-form');
   if (loginForm) {
     loginForm.addEventListener('submit', handleLogin);
   }
 
-  // 3. PLACE DETAILS PAGE
   const placeDetailsContainer = document.getElementById('place-details');
   if (placeDetailsContainer) {
     const placeId = getPlaceIdFromURL();
@@ -51,20 +61,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 4. ADD REVIEW PAGE
   const reviewForm = document.getElementById('review-form');
   if (reviewForm) {
     if (!token) {
-      window.location.href = 'index.html'; // Security redirect
+      window.location.href = 'index.html';
     } else {
-      // Get Place ID from URL (e.g. add_review.html?place_id=123)
       const urlParams = new URLSearchParams(window.location.search);
       const placeId = urlParams.get('place_id');
+      
       console.log("Current Place ID:", placeId);
+
       if (!placeId) {
-      alert('Error: Place ID missing from URL');
-      window.location.href = 'index.html';
-    }
+        alert('Error: Place ID missing from URL');
+        window.location.href = 'index.html';
+      }
 
       reviewForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -87,6 +97,19 @@ function getCookie(name) {
 function getPlaceIdFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get('id');
+}
+
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
 }
 
 // --- API ACTIONS ---
@@ -160,66 +183,92 @@ async function fetchPlaceDetails(token, placeId) {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`http://127.0.0.1:5000/api/v1/places/${placeId}`, {
+    const placeResponse = await fetch(`http://127.0.0.1:5000/api/v1/places/${placeId}`, {
       method: 'GET',
       headers: headers
     });
 
-    if (response.ok) {
-      const place = await response.json();
-      displayPlaceDetails(place, token);
-    } else {
+    if (!placeResponse.ok) {
       document.getElementById('place-details').innerHTML = '<p>Error loading place.</p>';
+      return;
     }
+
+    const place = await placeResponse.json();
+
+    let reviews = [];
+    try {
+      const reviewsResponse = await fetch(`http://127.0.0.1:5000/api/v1/places/${placeId}/reviews`, {
+        method: 'GET',
+        headers: headers
+      });
+      if (reviewsResponse.ok) {
+        reviews = await reviewsResponse.json();
+      }
+    } catch (err) {
+      console.warn("Reviews endpoint failed or empty.");
+    }
+
+    displayPlaceDetails(place, reviews, token);
+
   } catch (error) {
     console.error('Error fetching details:', error);
   }
 }
 
-function displayPlaceDetails(place, token) {
-  const container = document.getElementById('place-details');
-  container.innerHTML = ''; // Clear loading text
+function displayPlaceDetails(place, reviews, token) {
+  const placeDetailsContainer = document.getElementById('place-details');
+  placeDetailsContainer.innerHTML = ''; 
 
-  // 1. Create Main Info Section
   const infoDiv = document.createElement('div');
   infoDiv.className = 'place-info';
   
   const hostName = place.owner ? `${place.owner.first_name} ${place.owner.last_name}` : 'Unknown Host';
-  const amenitiesList = place.amenities && place.amenities.length > 0 ? place.amenities.join(', ') : 'None listed';
+  
+  const amenitiesList = place.amenities && place.amenities.length > 0 
+    ? place.amenities.map(a => a.name).join(', ') 
+    : 'None listed';
 
   infoDiv.innerHTML = `
     <h1>${place.title}</h1>
-    <img src="images/place1.jpg" alt="${place.title}" style="width:100%; border-radius:10px; margin-bottom:20px; object-fit:cover;">
+    <img src="images/place1.jpg" alt="${place.title}" style="width:100%; max-height:500px; object-fit:cover; border-radius:10px; margin-bottom:20px;">
     <p><strong>Host:</strong> ${hostName}</p>
     <p><strong>Price:</strong> $${place.price} per night</p>
     <p><strong>Description:</strong> ${place.description}</p>
     <p><strong>Amenities:</strong> ${amenitiesList}</p>
   `;
-  container.appendChild(infoDiv);
+  
+  placeDetailsContainer.appendChild(infoDiv);
 
-  // 2. Configure "Add Review" Button
   const addReviewBtn = document.getElementById('add-review-btn');
   if (addReviewBtn) {
     if (token) {
       addReviewBtn.style.display = 'inline-block';
-      // Set the link to include the place ID
       addReviewBtn.href = `add_review.html?place_id=${place.id}`;
     } else {
       addReviewBtn.style.display = 'none';
     }
   }
 
-  // 3. Populate Reviews
   const reviewsList = document.getElementById('reviews-list');
   if (reviewsList) {
     reviewsList.innerHTML = ''; // Clear old reviews
-    if (place.reviews && place.reviews.length > 0) {
-      place.reviews.forEach(review => {
+    
+    if (reviews && reviews.length > 0) {
+      reviews.forEach(review => {
         const reviewCard = document.createElement('div');
         reviewCard.className = 'review-card';
+        
+        let reviewerName = 'Anonymous';
+        if (review.user) {
+            reviewerName = review.user.first_name || 'User';
+        } else if (review.user_id) {
+            reviewerName = 'User ' + review.user_id.substring(0, 4);
+        }
+
         reviewCard.innerHTML = `
-          <h3>${review.user ? review.user.first_name : 'User'}</h3>
+          <h3>${reviewerName}</h3>
           <p>${review.text}</p>
+          <p style="font-size: 0.8em; color: gray;">${new Date(review.created_at || Date.now()).toLocaleDateString()}</p>
         `;
         reviewsList.appendChild(reviewCard);
       });
@@ -231,34 +280,63 @@ function displayPlaceDetails(place, token) {
 
 async function submitReview(token, placeId, reviewText) {
   try {
+    const decoded = parseJwt(token);
+    const currentUserId = decoded ? decoded.sub : null; 
+
+
+    const payload = {
+        place_id: placeId,
+        text: reviewText,
+        user_id: currentUserId,
+        rating: 5 
+    };
+
     const response = await fetch('http://127.0.0.1:5000/api/v1/reviews/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        place_id: placeId,
-        text: reviewText,
-        rating: 5 // Default rating required by some backends
-      })
+      body: JSON.stringify(payload)
     });
 
     if (response.ok) {
       alert('Review submitted successfully!');
-      
-      // DEBUG: Log the ID to the console to ensure it's not null
-      console.log("Redirecting to place id:", placeId);
-
-      // FIX 1: Use .assign() instead of .href (more reliable)
       window.location.assign(`place.html?id=${placeId}`);
-      
     } else {
+      // --- IMPROVED ERROR HANDLING ---
       const errorData = await response.json();
-      alert('Failed: ' + (errorData.msg || response.statusText));
+      
+
+      const serverMessage = errorData.msg || errorData.error || errorData.message;
+      
+      if (serverMessage) {
+          alert('Failed: ' + serverMessage);
+      } else {
+          alert('Failed: An unknown error occurred.');
+      }
+      
+      console.error("Server Error Details:", errorData);
     }
   } catch (error) {
-    console.error('Error submitting review:', error);
-    alert('An error occurred. Check the Console.');
+    console.error('Network Error:', error);
+    alert('An error occurred. Please check your connection.');
   }
+}
+
+// --- SEARCH FUNCTION ---
+function performSearch(query) {
+  const lowerCaseQuery = query.toLowerCase().trim();
+  const cards = document.querySelectorAll('.place-card');
+
+  cards.forEach(card => {
+    const title = card.querySelector('h2').textContent.toLowerCase();
+    
+    if (title.includes(lowerCaseQuery)) {
+
+      card.style.display = 'flex';
+    } else {
+      card.style.display = 'none';
+    }
+  });
 }
