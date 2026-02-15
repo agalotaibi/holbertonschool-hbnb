@@ -22,6 +22,7 @@ Implementation of RESTful API endpoints and core business logic:
 - Amenities management
 - In-Memory data storage
 
+
 **Location:** `part2/`
 
 ### Part 3: Enhanced Backend with Authentication and Database Integration
