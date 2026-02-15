@@ -22,7 +22,6 @@ Implementation of RESTful API endpoints and core business logic:
 - Amenities management
 - In-Memory data storage
 
-
 **Location:** `part2/`
 
 ### Part 3: Enhanced Backend with Authentication and Database Integration
@@ -43,7 +42,8 @@ Secure backend with JWT authentication and persistent database:
 - Client-Side Authentication: Managing user sessions via cookies and JWT tokens.
 - Interactive Features: Price filtering, form handling (Login, Reviews), and search functionality.
 - Protected Routes: Client-side redirection for unauthenticated users on secure pages.
-**Location: `part4/`
+
+**Location:** `part4/`
 
 ---
 
