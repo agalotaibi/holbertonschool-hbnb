@@ -35,6 +35,15 @@ Secure backend with JWT authentication and persistent database:
 
 **Location:** `part3/`
 
+### Part 4: Dynamic Frontend Development
+- Development of a responsive client-side interface to interact with the backend API:
+- Dynamic Content: Populating place listings and details using JavaScript (DOM manipulation).
+- API Integration: Using the Fetch API to communicate with the backend endpoints.
+- Client-Side Authentication: Managing user sessions via cookies and JWT tokens.
+- Interactive Features: Price filtering, form handling (Login, Reviews), and search functionality.
+- Protected Routes: Client-side redirection for unauthenticated users on secure pages.
+**Location: `part4/`
+
 ---
 
 ## 🏗 Architecture
